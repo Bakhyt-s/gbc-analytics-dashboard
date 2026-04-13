@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GBEmpire — Дашборд заказов</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <style>
+    /* ── Reset & base ─────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0d0d0d;
+      --surface:   #161616;
+      --surface-2: #1f1f1f;
+      --border:    #2a2a2a;
+      --accent:    #22c55e;
+      --accent-dim:#16a34a;
+      --accent-bg: rgba(34,197,94,.08);
+      --text:      #f5f5f5;
+      --text-2:    #a1a1aa;
+      --text-3:    #71717a;
+      --red:       #ef4444;
+      --amber:     #f59e0b;
+      --radius:    12px;
+      --shadow:    0 4px 24px rgba(0,0,0,.45);
+    }
+
+    html { font-size: 16px; }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.5;
+    }
+
+    /* ── Scrollbar ────────────────────────────────────────────── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+    /* ── Layout ───────────────────────────────────────────────── */
+    .app { display: flex; flex-direction: column; min-height: 100vh; }
+
+    /* ── Header ───────────────────────────────────────────────── */
+    header {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(13,13,13,.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+      height: 64px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+
+    .logo {
+      display: flex; align-items: center; gap: 10px;
+      text-decoration: none;
+    }
+    .logo-mark {
+      width: 36px; height: 36px; border-radius: 8px;
+      background: var(--accent);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 15px; color: #000; letter-spacing: -.5px;
+    }
+    .logo-name {
+      font-size: 17px; font-weight: 700; color: var(--text); letter-spacing: -.3px;
+    }
+    .logo-sub {
+      font-size: 11px; color: var(--text-3); font-weight: 400; letter-spacing: .3px;
+    }
+
+    .header-right { display: flex; align-items: center; gap: 12px; }
+
+    .badge-brands {
+      display: flex; gap: 6px; align-items: center;
+    }
+    .brand-pill {
+      font-size: 11px; font-weight: 500;
+      padding: 3px 9px; border-radius: 20px;
+      border: 1px solid var(--border);
+      color: var(--text-2);
+      background: var(--surface);
+    }
+
+    .status-dot {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 12px; color: var(--text-3);
+    }
+    .dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 6px var(--accent);
+      animation: pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%,100% { opacity: 1; } 50% { opacity: .4; }
+    }
+
+    /* ── Main ─────────────────────────────────────────────────── */
+    main { flex: 1; padding: 32px 24px; max-width: 1280px; margin: 0 auto; width: 100%; }
+
+    /* ── Section titles ───────────────────────────────────────── */
+    .section-title {
+      font-size: 12px; font-weight: 600; letter-spacing: .8px;
+      text-transform: uppercase; color: var(--text-3);
+      margin-bottom: 14px;
+    }
+
+    /* ── KPI cards ────────────────────────────────────────────── */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+
+    .kpi-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 22px 24px;
+      position: relative;
+      overflow: hidden;
+      transition: border-color .2s;
+    }
+    .kpi-card:hover { border-color: var(--accent); }
+    .kpi-card::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0; height: 2px;
+      background: var(--accent);
+      opacity: 0;
+      transition: opacity .2s;
+    }
+    .kpi-card:hover::before { opacity: 1; }
+
+    .kpi-label {
+      font-size: 12px; font-weight: 500; color: var(--text-3);
+      text-transform: uppercase; letter-spacing: .5px;
+      margin-bottom: 10px;
+    }
+    .kpi-value {
+      font-size: 32px; font-weight: 700; color: var(--text);
+      letter-spacing: -1px; line-height: 1;
+      margin-bottom: 8px;
+    }
+    .kpi-value .currency {
+      font-size: 18px; font-weight: 500; color: var(--text-2);
+      letter-spacing: 0;
+    }
+    .kpi-trend {
+      font-size: 12px; color: var(--text-3);
+    }
+    .kpi-icon {
+      position: absolute; right: 20px; top: 20px;
+      width: 36px; height: 36px; border-radius: 8px;
+      background: var(--accent-bg);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+    }
+
+    /* skeleton loader */
+    .skeleton {
+      background: linear-gradient(90deg, var(--surface-2) 25%, var(--border) 50%, var(--surface-2) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.4s infinite;
+      border-radius: 6px;
+      display: inline-block;
+    }
+    @keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+
+    /* ── Chart row ────────────────────────────────────────────── */
+    .chart-row {
+      display: grid;
+      grid-template-columns: 1fr 320px;
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+    }
+    .card-title {
+      font-size: 14px; font-weight: 600; color: var(--text);
+      margin-bottom: 20px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .card-title span { color: var(--text-3); font-size: 12px; font-weight: 400; }
+
+    .chart-wrap {
+      position: relative; height: 280px;
+    }
+
+    /* ── Status breakdown ─────────────────────────────────────── */
+    .status-list { display: flex; flex-direction: column; gap: 12px; }
+
+    .status-item {
+      display: flex; align-items: center; gap: 10px;
+    }
+    .status-color {
+      width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0;
+    }
+    .status-name {
+      flex: 1; font-size: 13px; color: var(--text-2);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .status-count {
+      font-size: 13px; font-weight: 600; color: var(--text);
+    }
+    .status-bar-wrap {
+      width: 100%; background: var(--surface-2);
+      border-radius: 4px; height: 4px; overflow: hidden;
+      margin-top: 4px;
+    }
+    .status-bar { height: 4px; border-radius: 4px; }
+
+    /* ── Orders table ─────────────────────────────────────────── */
+    .table-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+
+    .table-header {
+      padding: 18px 24px;
+      display: flex; align-items: center; justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+    }
+    .table-title { font-size: 14px; font-weight: 600; }
+    .table-count { font-size: 12px; color: var(--text-3); }
+
+    table { width: 100%; border-collapse: collapse; }
+    thead th {
+      padding: 10px 16px;
+      text-align: left;
+      font-size: 11px; font-weight: 600;
+      color: var(--text-3); text-transform: uppercase; letter-spacing: .5px;
+      background: var(--surface-2);
+      border-bottom: 1px solid var(--border);
+    }
+    tbody tr {
+      border-bottom: 1px solid var(--border);
+      transition: background .15s;
+    }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: var(--surface-2); }
+    tbody td {
+      padding: 12px 16px;
+      font-size: 13px; color: var(--text-2);
+      vertical-align: middle;
+    }
+    tbody td:first-child { color: var(--text); font-weight: 500; }
+    .td-sum { color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
+
+    /* ── Status badges ────────────────────────────────────────── */
+    .badge {
+      display: inline-block;
+      font-size: 11px; font-weight: 500;
+      padding: 2px 8px; border-radius: 20px;
+      border: 1px solid transparent;
+    }
+    .badge-new        { background: rgba(34,197,94,.1);  border-color: rgba(34,197,94,.3);  color: #86efac; }
+    .badge-complete   { background: rgba(99,102,241,.1); border-color: rgba(99,102,241,.3); color: #a5b4fc; }
+    .badge-cancel     { background: rgba(239,68,68,.1);  border-color: rgba(239,68,68,.3);  color: #fca5a5; }
+    .badge-default    { background: rgba(161,161,170,.1);border-color: rgba(161,161,170,.2);color: #a1a1aa; }
+
+    /* ── Footer ───────────────────────────────────────────────── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 16px 24px;
+      text-align: center;
+      font-size: 12px; color: var(--text-3);
+    }
+    footer strong { color: var(--accent); }
+
+    /* ── Error state ──────────────────────────────────────────── */
+    .error-banner {
+      background: rgba(239,68,68,.1); border: 1px solid rgba(239,68,68,.3);
+      border-radius: var(--radius); padding: 16px 20px;
+      color: #fca5a5; font-size: 13px; margin-bottom: 24px;
+      display: none;
+    }
+
+    /* ── Responsive ───────────────────────────────────────────── */
+    @media (max-width: 900px) {
+      .chart-row { grid-template-columns: 1fr; }
+      .badge-brands { display: none; }
+    }
+    @media (max-width: 600px) {
+      main { padding: 20px 16px; }
+      header { padding: 0 16px; }
+      .kpi-value { font-size: 26px; }
+      table { font-size: 12px; }
+      tbody td { padding: 10px 12px; }
+      thead th { padding: 8px 12px; }
+      .col-customer { display: none; }
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ── Header ── -->
+  <header>
+    <a class="logo" href="#">
+      <div class="logo-mark">GB</div>
+      <div>
+        <div class="logo-name">GBEmpire</div>
+        <div class="logo-sub">ANALYTICS DASHBOARD</div>
+      </div>
+    </a>
+
+    <div class="header-right">
+      <div class="badge-brands">
+        <span class="brand-pill">Tomyris</span>
+        <span class="brand-pill">Fit Me</span>
+        <span class="brand-pill">Nomad Khan</span>
+      </div>
+      <div class="status-dot">
+        <div class="dot"></div>
+        <span id="last-updated">Загрузка…</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ── Main ── -->
+  <main>
+
+    <div class="error-banner" id="error-banner"></div>
+
+    <!-- KPI cards -->
+    <p class="section-title">Ключевые метрики</p>
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-icon">📦</div>
+        <div class="kpi-label">Заказов всего</div>
+        <div class="kpi-value" id="kpi-count"><span class="skeleton" style="width:60px;height:32px">&nbsp;</span></div>
+        <div class="kpi-trend" id="kpi-count-sub">—</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon">💰</div>
+        <div class="kpi-label">Общая сумма</div>
+        <div class="kpi-value" id="kpi-total"><span class="skeleton" style="width:120px;height:32px">&nbsp;</span></div>
+        <div class="kpi-trend" id="kpi-total-sub">—</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon">📊</div>
+        <div class="kpi-label">Средний чек</div>
+        <div class="kpi-value" id="kpi-avg"><span class="skeleton" style="width:100px;height:32px">&nbsp;</span></div>
+        <div class="kpi-trend" id="kpi-avg-sub">—</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon">🏆</div>
+        <div class="kpi-label">Макс. заказ</div>
+        <div class="kpi-value" id="kpi-max"><span class="skeleton" style="width:100px;height:32px">&nbsp;</span></div>
+        <div class="kpi-trend" id="kpi-max-sub">—</div>
+      </div>
+    </div>
+
+    <!-- Chart row -->
+    <div class="chart-row">
+      <!-- Bar chart: orders by day -->
+      <div class="card">
+        <div class="card-title">
+          Заказы по дням
+          <span id="chart-range"></span>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="ordersChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Status breakdown -->
+      <div class="card">
+        <div class="card-title">
+          Статусы заказов
+          <span id="status-total"></span>
+        </div>
+        <div class="status-list" id="status-list">
+          <!-- filled by JS -->
+          <div class="skeleton" style="height:14px;width:100%;margin-bottom:8px">&nbsp;</div>
+          <div class="skeleton" style="height:14px;width:80%">&nbsp;</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Orders table -->
+    <p class="section-title">Последние заказы</p>
+    <div class="table-card">
+      <div class="table-header">
+        <span class="table-title">Все заказы</span>
+        <span class="table-count" id="table-count">—</span>
+      </div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead>
+            <tr>
+              <th>№ заказа</th>
+              <th class="col-customer">Клиент</th>
+              <th>Статус</th>
+              <th>Сумма</th>
+              <th>Дата</th>
+            </tr>
+          </thead>
+          <tbody id="orders-tbody">
+            <tr><td colspan="5" style="text-align:center;padding:32px;color:var(--text-3)">Загрузка данных…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+
+  <footer>
+    <strong>GBEmpire</strong> &nbsp;·&nbsp; Tomyris · Fit Me · Nomad Khan &nbsp;·&nbsp; Казахстан
+  </footer>
+</div>
+
+<script>
+// ── Config ────────────────────────────────────────────────────────────────────
+const SUPABASE_URL     = 'https://axzvabiuhcbdxtjblspu.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF4enZhYml1aGNiZHh0amJsc3B1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwNzMxNzksImV4cCI6MjA5MTY0OTE3OX0.HZxeJUwC4jL81KXuhYa2Sdc_GY9m113yVd0ZbaGq2d4';
+
+// ── Status labels & colours ───────────────────────────────────────────────────
+const STATUS_META = {
+  'new':                    { label: 'Новый',               color: '#22c55e' },
+  'complete':               { label: 'Выполнен',            color: '#6366f1' },
+  'partially-completed':    { label: 'Частично',            color: '#8b5cf6' },
+  'availability-confirmed': { label: 'Наличие подтверждено',color: '#06b6d4' },
+  'offer-analog':           { label: 'Предложен аналог',    color: '#f59e0b' },
+  'ready-to-wait':          { label: 'Готов ждать',         color: '#84cc16' },
+  'waiting-for-arrival':    { label: 'Ждёт поступления',    color: '#14b8a6' },
+  'client-confirmed':       { label: 'Клиент подтвердил',   color: '#10b981' },
+  'prepayed':               { label: 'Предоплачен',         color: '#3b82f6' },
+  'delivering':             { label: 'Доставляется',        color: '#f97316' },
+  'cancel-other':           { label: 'Отменён',             color: '#ef4444' },
+  'return':                 { label: 'Возврат',             color: '#f43f5e' },
+};
+
+function statusMeta(code) {
+  return STATUS_META[code] || { label: code, color: '#71717a' };
+}
+
+function badgeClass(code) {
+  if (['new','client-confirmed','prepayed','complete'].includes(code)) return 'badge-new';
+  if (['cancel-other','return','no-product'].includes(code))           return 'badge-cancel';
+  if (code === 'complete')                                              return 'badge-complete';
+  return 'badge-default';
+}
+
+// ── Fetch all orders from Supabase ────────────────────────────────────────────
+async function fetchOrders() {
+  const url = `${SUPABASE_URL}/rest/v1/orders?select=id,order_number,created_at,status,total_sum,customer_name&order=created_at.desc`;
+  const res = await fetch(url, {
+    headers: {
+      'apikey':        SUPABASE_ANON_KEY,
+      'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+    }
+  });
+  if (!res.ok) throw new Error(`Supabase ${res.status}: ${await res.text()}`);
+  return res.json();
+}
+
+// ── Formatters ────────────────────────────────────────────────────────────────
+const fmtCurrency = v =>
+  new Intl.NumberFormat('ru-KZ', { maximumFractionDigits: 0 }).format(v) + ' ₸';
+
+const fmtDate = iso =>
+  new Intl.DateTimeFormat('ru-KZ', { day: '2-digit', month: 'short', year: 'numeric',
+    hour: '2-digit', minute: '2-digit' }).format(new Date(iso));
+
+const fmtDay = iso => iso ? iso.slice(0, 10) : '';
+
+// ── Build KPIs ────────────────────────────────────────────────────────────────
+function renderKPIs(orders) {
+  const count    = orders.length;
+  const total    = orders.reduce((s, o) => s + (o.total_sum || 0), 0);
+  const avg      = count ? Math.round(total / count) : 0;
+  const max      = count ? Math.max(...orders.map(o => o.total_sum || 0)) : 0;
+
+  // Count by day
+  const days = {};
+  orders.forEach(o => { const d = fmtDay(o.created_at); days[d] = (days[d]||0)+1; });
+  const dayCount = Object.keys(days).length;
+
+  document.getElementById('kpi-count').textContent    = count;
+  document.getElementById('kpi-count-sub').textContent = `За ${dayCount} ${dayCount===1?'день':'дней'}`;
+
+  document.getElementById('kpi-total').innerHTML = fmtCurrency(total);
+  document.getElementById('kpi-total-sub').textContent = `По ${count} заказам`;
+
+  document.getElementById('kpi-avg').innerHTML = fmtCurrency(avg);
+  document.getElementById('kpi-avg-sub').textContent = 'Средний чек';
+
+  document.getElementById('kpi-max').innerHTML = fmtCurrency(max);
+  document.getElementById('kpi-max-sub').textContent = 'Максимальный заказ';
+}
+
+// ── Build chart ───────────────────────────────────────────────────────────────
+function renderChart(orders) {
+  // Group by day
+  const dayMap = {};
+  orders.forEach(o => {
+    const d = fmtDay(o.created_at);
+    if (!dayMap[d]) dayMap[d] = { count: 0, sum: 0 };
+    dayMap[d].count++;
+    dayMap[d].sum += (o.total_sum || 0);
+  });
+
+  const labels = Object.keys(dayMap).sort();
+  const counts = labels.map(d => dayMap[d].count);
+  const sums   = labels.map(d => dayMap[d].sum);
+
+  // Range label
+  if (labels.length) {
+    const first = new Date(labels[0]).toLocaleDateString('ru-KZ',{day:'2-digit',month:'short'});
+    const last  = new Date(labels[labels.length-1]).toLocaleDateString('ru-KZ',{day:'2-digit',month:'short'});
+    document.getElementById('chart-range').textContent = first === last ? first : `${first} – ${last}`;
+  }
+
+  const ctx = document.getElementById('ordersChart').getContext('2d');
+
+  // Gradient fill
+  const gradient = ctx.createLinearGradient(0, 0, 0, 280);
+  gradient.addColorStop(0, 'rgba(34,197,94,.35)');
+  gradient.addColorStop(1, 'rgba(34,197,94,.0)');
+
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        {
+          type: 'bar',
+          label: 'Заказов',
+          data: counts,
+          backgroundColor: 'rgba(34,197,94,.75)',
+          borderColor:     '#22c55e',
+          borderWidth: 1,
+          borderRadius: 6,
+          yAxisID: 'yCount',
+          order: 2,
+        },
+        {
+          type: 'line',
+          label: 'Сумма (₸)',
+          data: sums,
+          borderColor:     '#6366f1',
+          backgroundColor: 'rgba(99,102,241,.12)',
+          borderWidth: 2,
+          tension: 0.4,
+          pointBackgroundColor: '#6366f1',
+          pointRadius: 4,
+          pointHoverRadius: 6,
+          fill: true,
+          yAxisID: 'ySum',
+          order: 1,
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: {
+          labels: { color: '#a1a1aa', font: { family: 'Inter', size: 12 }, boxWidth: 12, padding: 16 }
+        },
+        tooltip: {
+          backgroundColor: '#1f1f1f',
+          borderColor: '#2a2a2a',
+          borderWidth: 1,
+          titleColor: '#f5f5f5',
+          bodyColor: '#a1a1aa',
+          padding: 12,
+          callbacks: {
+            label: ctx => ctx.dataset.label === 'Сумма (₸)'
+              ? `  Сумма: ${fmtCurrency(ctx.raw)}`
+              : `  Заказов: ${ctx.raw}`
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid:  { color: 'rgba(255,255,255,.04)' },
+          ticks: { color: '#71717a', font: { family: 'Inter', size: 11 } },
+          border:{ color: '#2a2a2a' }
+        },
+        yCount: {
+          position: 'left',
+          beginAtZero: true,
+          grid:  { color: 'rgba(255,255,255,.04)' },
+          ticks: { color: '#71717a', font: { family: 'Inter', size: 11 }, precision: 0 },
+          border:{ color: '#2a2a2a', dash: [4,4] }
+        },
+        ySum: {
+          position: 'right',
+          beginAtZero: true,
+          grid: { display: false },
+          ticks: {
+            color: '#71717a', font: { family: 'Inter', size: 11 },
+            callback: v => (v >= 1_000_000 ? (v/1_000_000).toFixed(1)+'M' : v >= 1000 ? (v/1000).toFixed(0)+'K' : v) + ' ₸'
+          },
+          border: { color: '#2a2a2a' }
+        }
+      }
+    }
+  });
+}
+
+// ── Status breakdown ──────────────────────────────────────────────────────────
+function renderStatuses(orders) {
+  const map = {};
+  orders.forEach(o => { const s = o.status||'unknown'; map[s] = (map[s]||0)+1; });
+  const sorted = Object.entries(map).sort((a,b)=>b[1]-a[1]);
+  const total  = orders.length;
+  document.getElementById('status-total').textContent = `${total} total`;
+
+  const list = document.getElementById('status-list');
+  list.innerHTML = sorted.map(([code, cnt]) => {
+    const meta = statusMeta(code);
+    const pct  = total ? Math.round(cnt/total*100) : 0;
+    return `
+      <div class="status-item" style="flex-direction:column;align-items:stretch">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">
+          <div class="status-color" style="background:${meta.color}"></div>
+          <span class="status-name">${meta.label}</span>
+          <span class="status-count">${cnt}</span>
+          <span style="font-size:11px;color:var(--text-3);margin-left:auto">${pct}%</span>
+        </div>
+        <div class="status-bar-wrap">
+          <div class="status-bar" style="width:${pct}%;background:${meta.color}"></div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+// ── Orders table ──────────────────────────────────────────────────────────────
+function renderTable(orders) {
+  document.getElementById('table-count').textContent = `${orders.length} заказов`;
+  const tbody = document.getElementById('orders-tbody');
+
+  if (!orders.length) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:32px;color:var(--text-3)">Нет данных</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = orders.map(o => {
+    const meta = statusMeta(o.status);
+    return `
+      <tr>
+        <td>${o.order_number || '#'+o.id}</td>
+        <td class="col-customer">${o.customer_name || '—'}</td>
+        <td>
+          <span class="badge ${badgeClass(o.status)}" style="border-color:${meta.color}22;color:${meta.color}">
+            ${meta.label}
+          </span>
+        </td>
+        <td class="td-sum">${fmtCurrency(o.total_sum || 0)}</td>
+        <td style="color:var(--text-3)">${o.created_at ? fmtDate(o.created_at) : '—'}</td>
+      </tr>`;
+  }).join('');
+}
+
+// ── Error banner ──────────────────────────────────────────────────────────────
+function showError(msg) {
+  const el = document.getElementById('error-banner');
+  el.textContent = '⚠ ' + msg;
+  el.style.display = 'block';
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+async function init() {
+  try {
+    const orders = await fetchOrders();
+    renderKPIs(orders);
+    renderChart(orders);
+    renderStatuses(orders);
+    renderTable(orders);
+
+    const now = new Date().toLocaleTimeString('ru-KZ', { hour: '2-digit', minute: '2-digit' });
+    document.getElementById('last-updated').textContent = `Обновлено в ${now}`;
+  } catch (err) {
+    console.error(err);
+    showError(err.message);
+    document.getElementById('last-updated').textContent = 'Ошибка загрузки';
+  }
+}
+
+init();
+</script>
+</body>
+</html>

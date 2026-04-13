@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python:*)",
+      "Bash(vercel whoami:*)",
+      "Bash(npm --version)",
+      "Bash(npm install:*)",
+      "Bash(vercel --version)",
+      "Bash(npx plugins:*)",
+      "Bash(vercel:*)",
+      "Bash(tasklist)",
+      "Bash(ps -W)",
+      "Bash(kill 1961 1977)"
+    ]
+  }
+}
